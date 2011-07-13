@@ -1,3 +1,5 @@
+package XML::Writer::Compiler;
+
 # ABSTRACT: produce aoa from tree
 
 use strict;
@@ -5,7 +7,7 @@ use warnings;
 
 use autodie;
 
-use HTML::Element::Library;
+use Moose;
 
 package XML::Element;
 
