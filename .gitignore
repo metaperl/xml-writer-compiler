@@ -1,2 +1,4 @@
 .build/*
 *~
+t/lib/My/*
+t/lib/t/*
