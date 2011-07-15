@@ -141,22 +141,33 @@ sub cleantag {
     $tag;
 }
 
+sub childname {
+  my ($child, $M, $D) = @_;
+  if ( scalar(@$D) == 0 ) {
+    sprintf '$self->_tag_%s; %s', $child->{_tag}, "\n";
+  }
+  else {
+    sprintf '$self->%s_%s; %s', $M, $child->{_tag}, "\n";
+  }
+}
+
+
 sub tagmethod {
     my ( $self, $tag, $divecall, $children, $derefchain ) = @_;
 
+    my $childname;
     my $methodname = do {
-        if ( scalar(@$derefchain) <= 1 ) {
-	  "_tag_$tag";
-	} else {
-	  sprintf '_tag_%s', join '_', @$derefchain;
-	}
+        if ( scalar(@$derefchain) == 0 ) {
+            "_tag_$tag";
+        }
+        else {
+            sprintf '_tag_%s', join '_', @$derefchain;
+        }
     };
-    warn "METHODNAME: $methodname";
-    my @children = map {
-        ref($_)
-          ? sprintf '$self->%s_%s; %s', $methodname, $_->{_tag}, "\n"
-          : ()
-    } @$children;
+    warn "METHODNAME: $methodname... derefchain: @$derefchain";
+
+
+    my @children = map { ref($_) ? childname($_, $methodname, $derefchain) : () } @$children;
     my $childstr = @children ? "@children" : '$self->writer->characters($data)';
 
     sprintf( <<'EOSTR', $methodname, $divecall, $tag, $childstr );
