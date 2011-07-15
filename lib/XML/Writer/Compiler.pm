@@ -4,6 +4,7 @@ package XML::Writer::Compiler;
 
 use strict;
 use warnings;
+use feature "switch";
 
 use autodie;
 
@@ -14,11 +15,14 @@ use Carp;
 sub buildclass {
     my ( $self, $pkg, $tree, $firstdepth, $prepend_lib, $fileheader ) = @_;
 
-    my $rootnode = $tree->look_down('_tag' => qr/./);
+    my $rootnode = $tree->look_down( '_tag' => qr/./ );
 
-    my $lol = __PACKAGE__->mklol($tree, $firstdepth);
+    my $lol = __PACKAGE__->mklol( $tree, $firstdepth );
 
-    my $pkgstr = __PACKAGE__->_mkpkg( $pkg => $lol, $fileheader, $rootnode->{_tag}  );
+    my $pkgstr = __PACKAGE__->_mkpkg(
+        $pkg => $lol,
+        $prepend_lib, $fileheader, $rootnode->{_tag}
+    );
 
     warn "PKG:$pkg";
 
@@ -27,12 +31,13 @@ sub buildclass {
     warn "PART:@part";
 
     use File::Spec;
-    my $path = File::Spec->catdir( $prepend_lib ? $prepend_lib : (), @part[0 .. $#part-1] );
+    my $path = File::Spec->catdir( $prepend_lib ? $prepend_lib : (),
+        @part[ 0 .. $#part - 1 ] );
     warn "PATH:$path";
     use File::Path;
-    File::Path::make_path($path, {verbose => 1});
+    File::Path::make_path( $path, { verbose => 1 } );
 
-    $file =  File::Spec->catfile($path, "$file.pm");
+    $file = File::Spec->catfile( $path, "$file.pm" );
     warn "FILE:$file";
     open( my $fh, '>', $file );
 
@@ -44,9 +49,9 @@ sub buildclass {
 sub mklol {
     my ( $class, $tree, $firstdepth ) = @_;
     unless ($firstdepth) {
-      Carp::cluck('Assuming firstdepth == 0');
-      $firstdepth = 0;
-    } 
+        Carp::cluck('Assuming firstdepth == 0');
+        $firstdepth = 0;
+    }
     open( my $fh, '>', \my $string ) or die "Could not open string for writing";
     $tree->methodsfrom( $fh, 0, '', $firstdepth );
 
@@ -57,18 +62,18 @@ sub mklol {
 
 }
 
-
 sub _mkpkg {
-    my ( $self, $pkg, $lol, $extends_string, $rootnode ) = @_;
+    my ( $self, $pkg, $lol, $prepend_lib, $extends_string, $rootnode ) = @_;
 
     open( my $fh, '>', \my $pkgstr ) or die "Could not open pkg for writing";
-    
-    my $extends = $extends_string ? "extends qw($extends_string)" : '' ;
+
+    my $extends = $extends_string ? "extends qw($extends_string)" : '';
     $extends =~ s/^\s+//g;
-    $fh->printf(<<'EOPKG', $pkg, $extends, $lol, $rootnode);
+    $fh->printf( <<'EOPKG', $pkg, $extends, $lol, $rootnode );
 package %s;
 use Moose;
 
+with qw(XML::Writer::Compiler::AutoPackage);
 
 
 %s;
@@ -77,10 +82,8 @@ use Data::Dumper;
 use HTML::Element::Library;
 
 
-use XML::Writer;
-use XML::Writer::String;
 
-use Data::Diver qw( Dive DiveRef DiveError );
+
 use XML::Element;
 
 has 'data' => (
@@ -90,79 +93,17 @@ has 'data' => (
 has 'writer' => (is => 'rw', isa => 'XML::Writer');
 has 'string' => (is => 'rw', isa => 'XML::Writer::String');
 
-sub BUILD {
-  my($self)=@_;
-
-  my $s = XML::Writer::String->new();
-  my $writer = XML::Writer->new( OUTPUT => $s );
-
-  $self->string($s);
-  $self->writer($writer);
-}
-
-
-sub DIVE {
-my ($root,@keys)=@_;
-   my $ref = Dive(@_);
-    my $ret;
-   warn "DIVEROOT: " . Dumper($root);
-   warn "DIVEKEYS: @keys";
-    if (ref $ref eq 'ARRAY') {
-      $ret = $ref;
-    } elsif (ref $ref eq 'HASH') {
-      $ret = '';
-    } elsif (not defined $ref) {
-      $ret = '';
-    } else {
-      $ret = $ref;
-    }
-    warn "DIVERET: $ret";
-    $ret;
-
-
-}
-
-sub EXTRACT {
-my($scalar)=@_;
-
-my @ret;
-
-if (ref $scalar eq 'ARRAY') {
-  @ret = @$scalar;
-} elsif (ref $scalar eq 'HASH') {
-  @ret = ( [], '' ) ;
-} else {
-  @ret = ( [], $scalar);
-}
-
-warn "EXTRACTRET: " . Dumper(\@ret);
-@ret;
-
-}
-
-sub maybe_morph {
-  my($self)=@_;
-  if ($self->can('morph')) {
-    warn "MORPHING";
-    $self->morph;
-  }
-}
 
 %s;
 
 sub xml {
 my($self)=@_;
-  my $method = '%s';
+  my $method = '_tag_%s';
   $self->$method;
 $self->writer->end;
 $self;
 }
 
-sub tree {
-  my $self=shift;
-  my $href=shift;
-  XML::Element->new_from_lol($self->lol);
-}
 
 1;
 
@@ -173,7 +114,6 @@ EOPKG
     perltidy( source => \$pkgstr, destination => \my $dest );
     $dest;
 
-
 }
 
 1;
@@ -181,19 +121,20 @@ EOPKG
 package XML::Element;
 
 sub cleantag {
-    my ($self, $andattr) = @_;
+    my ( $self, $andattr ) = @_;
     my $tag = $self->{_tag};
 
     return $tag unless $andattr;
 
     my %attr = $self->all_external_attr;
     my $attr;
-    if (scalar keys %attr) {
-      use Data::Dumper;my $d = Data::Dumper->new([\%attr]);
-      $d->Purity(1)->Terse(1);
-      $attr = $d->Dump;
+    if ( scalar keys %attr ) {
+        use Data::Dumper;
+        my $d = Data::Dumper->new( [ \%attr ] );
+        $d->Purity(1)->Terse(1);
+        $attr = $d->Dump;
 
-      $tag .=  " => $attr";
+        $tag .= " => $attr";
 
     }
 
@@ -201,17 +142,30 @@ sub cleantag {
 }
 
 sub tagmethod {
-  my ($self, $tag, $divecall, $children)=@_;
-  my @children = map { ref($_) ? sprintf '$self->%s; %s', $_->{_tag}, "\n" : () } @$children;
-  my $childstr = @children ? "@children" : '$self->writer->characters($data)' ;
+    my ( $self, $tag, $divecall, $children, $derefchain ) = @_;
 
-  sprintf(<<'EOSTR', $tag, $divecall, $tag, $childstr);
+    my $methodname = do {
+        if ( scalar(@$derefchain) <= 1 ) {
+	  "_tag_$tag";
+	} else {
+	  sprintf '_tag_%s', join '_', @$derefchain;
+	}
+    };
+    warn "METHODNAME: $methodname";
+    my @children = map {
+        ref($_)
+          ? sprintf '$self->%s_%s; %s', $methodname, $_->{_tag}, "\n"
+          : ()
+    } @$children;
+    my $childstr = @children ? "@children" : '$self->writer->characters($data)';
+
+    sprintf( <<'EOSTR', $methodname, $divecall, $tag, $childstr );
   sub %s {
   my($self)=@_;
 
   my $root = $self->data;
 %s;
-  my ($attr, $data) = EXTRACT($elementdata);
+  my ($attr, $data) = $self->EXTRACT($elementdata);
   $self->writer->startTag(%s => @$attr);
 
 %s;
@@ -220,14 +174,13 @@ sub tagmethod {
 EOSTR
 }
 
-
 sub divecall {
     my ( $self, $derefstring ) = @_;
     use Data::Dumper;
     my $str = Dumper($derefstring);
-    sprintf(<<'EOSTR', "@$derefstring");
+    sprintf( <<'EOSTR', "@$derefstring" );
 
-my $elementdata = DIVE( $root, qw(%s) ) ;
+my $elementdata = $self->DIVE( $root, qw(%s) ) ;
  
 EOSTR
 }
@@ -240,31 +193,35 @@ sub methodsfrom {
     my @newderef;
 
     if ( $depth < $firstdepth ) {
-      @newderef = ();
+        @newderef = ();
     }
     else {
         if ( $depth == $firstdepth ) {
-            @newderef =  $self->cleantag ;
+            @newderef = $self->cleantag;
         }
         if ( $depth > $firstdepth ) {
-	  @newderef = (@$derefstring, $self->cleantag);
+            @newderef = ( @$derefstring, $self->cleantag );
         }
     }
-    warn "DEREF: @newderef";
-    my @children = @{ $self->{'_content'} } ;
-    my $divecall = $self->divecall(\@newderef);
-    warn "DIVECALL: $divecall";
-    my $tagmethod = $self->tagmethod($self->cleantag, $divecall, \@children);
 
-    $fh->print( $tagmethod );
-    for ( @children ) {
+    #warn "DEREF: @newderef";
+    my @children = @{ $self->{'_content'} };
+    my $divecall = $self->divecall( \@newderef );
+
+    #warn "DIVECALL: $divecall";
+    my $tagmethod =
+      $self->tagmethod( $self->cleantag, $divecall, \@children, \@newderef );
+
+    $fh->print($tagmethod);
+    for (@children) {
 
         if ( ref $_ ) {    # element
-	  #use Data::Dumper;
-	  #warn Dumper($_);
-            $_->methodsfrom( $fh, $depth + 1, \@newderef, $firstdepth ); # recurse
+                           #use Data::Dumper;
+                           #warn Dumper($_);
+            $_->methodsfrom( $fh, $depth + 1, \@newderef, $firstdepth )
+              ;            # recurse
         }
-        else {    # text node
+        else {             # text node
             ;
         }
     }

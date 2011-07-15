@@ -1,9 +1,18 @@
 <a
-    href=https://github.com/metaperl/XML--Element--ToLOL>XML::Element::Tolol</a> 
-is a tool for compiling XML into the arrayref of
-arrayref (aka loltree) structure used by the 
-<a href=http://bit.ly/nXJ5uR>new_from_lol</a> method of
-[mod://HTML::Element]. The main values of this tool:
+    href=https://github.com/metaperl/xml-writer-compiler>XML::Writer::Compiler</a> 
+is a tool for compiling XML into a series of methods which generate XML using
+[mod://XML::Writer]. In a sense, it is similar to [mod://XML::Generator] because 
+methods are creating XML, however, it only generates methods based on
+sample XML instead of the free-form approach of XML::Generator. Thus,
+there is no need for the AUTOLOAD
+<CODE>(wizardry|games|hackery)</CODE> that Generator employs. It is
+also similar to [mod://XML::Toolkit] because it generates classes
+for XML. However, one XML file generates one class with
+XML::Writer::Compiler. XML::Toolkit generates one class per tag within
+a file. Also XML::Toolkit is class-based and refinement would be done
+via numerous subclasses of each XML element. In XML::Compiler::Writer,
+one subclass with several methods for various parts of the XML are all
+that is needed.
 
 <OL>
 <LI>To create Perl classes for XML generation, thereby allowing the
