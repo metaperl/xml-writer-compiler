@@ -4,7 +4,9 @@ use strict;
 use warnings;
 
 use Test::Kit qw(
-		  Test::More Test::XML
+		  Test::File::Contents
+		  Test::More
+		  Test::XML
 	       );
 
 1;

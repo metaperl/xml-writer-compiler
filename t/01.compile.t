@@ -12,12 +12,11 @@ $tree->parsefile("t/InvoiceAdd.xml");
 my $firstdepth = 4;
 my $prepend_lib = '';
 my $class = 't::lib::InvoiceAdd';
-my $pkg = $compiler->buildclass($class => $tree, $firstdepth, $prepend_lib);
+my $pkgstring = $compiler->buildclass($class => $tree, $firstdepth, $prepend_lib);
 
+my $description = 'test package generation';
+my $file = 't/lib/InvoiceAdd.pm.expected';
+file_contents_eq_or_diff($file, $pkgstring, $description);
 
-my $exp =
-'<shopping><item>bread</item><item>butter</item><item>beans</item></shopping>';
-
-is( $pkg, $exp, 'test package generation' );
 done_testing;
 
