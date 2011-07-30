@@ -241,3 +241,172 @@ sub methodsfrom {
 
 1;
 
+=head1 NAME
+
+XML::Writer::Compiler - create XML::Writer based classes whose instances can generate, refine and extend sample XML
+
+=head1 SYNOPSIS
+
+ ROOT=CustomerAdd
+ XML_FILE=$ROOT.xml
+ OUTPUT_PKG = XML::Quickbooks::$ROOT
+ HASH_DEPTH=4 #counting from 0, which level of XML file should hash keys start mapping from
+ OUTPATH_PREPEND=lib
+ EXTENDS=XML::Quickbooks # the XML class we generate, XML::Quickbooks::CustomerAdd has the parent XML::Quickbooks
+
+ # Now run the compiler on the XML file to produce an XML class, which produces XML when a hashref is supplied
+ # Also possible to subclass the generated XML class to customize XML generation when hashrefs are inadequate
+  xwc $XML_FILE $OUTPUT_PKG $HASH_DEPTH $OUTPUT_PREPEND $EXTENDS
+
+=head1 DESCRIPTION
+
+XML::Writer::Compiler is a module which takes a sample XML document and creates a single class from it. 
+This class contains methods for each tag of the XML. The instance of the class can generate XML with the content supplied via a 
+hashref. Subclassing the generated class allows more precise control over how the object-oriented XML generation occurs.
+
+The CPAN module most similar to XML::Writer::Compiler is L<XML::Toolkit>. 
+
+=head2 Simple Example
+
+=head3 XML
+
+ <note>
+  <to>
+    <person>
+      Bob
+    </person>
+  </to>
+  <from>Jani</from>
+  <heading>Reminder</heading>
+  <body>Don't forget me this weekend!</body>
+ </note>
+
+=head3 Compile XML to Perl class
+
+This step is normally done via the F<xwc> script, but you can also write Perl code to compile XML:
+
+ my $compiler = XML::Writer::Compiler->new;
+
+ my $tree = XML::TreeBuilder->new( { 'NoExpand' => 0, 'ErrorContext' => 0 } );
+ $tree->parse_file('t/sample.xml');
+
+ my $pkg = XML::Note';
+ my $class = $compiler->buildclass( $pkg, $tree, 0, '' );
+
+=head3 Perl
+ 
+ my %data = (
+    note => {
+        to => { person => 'Satan' },
+        from => [ [ via => 'postcard', russia => 'with love' ], 'moneypenny' ]
+    }
+ );
+
+ my $xml = XML::Note->new;
+ $xml->data(\%data);
+ warn  $xml->xml->string->value;
+ 
+=head2 Subclassing Example
+
+If a simple substitution from a hashref of data will not suffice, then you can take the methods of the generated class and 
+subclass them for things like repeating or conditional content. See the test file F<repeating.t> for an example.
+
+=head1 USAGE of xwc
+
+The F<xwc> script is the most common way to convert an XML file to an equivalent Perl class. The script takes the 
+following arguments
+
+=head2 xml_file (required)
+
+the full/relative path to the sample XML file
+
+=head2 perl_pkg
+
+the name of the Perl package that will represent the C<xml_file>
+
+=head2 hash_depth
+
+An XML file has nesting levels, or depth. Oftentimes, the outer levels will never be rewritten via the data hashref you supply.
+As a result, you dont want to have to several levels of your hashref before you actually specify the data you want to bind.
+
+Concretely, let's take some XML from the Quickbooks SDK:
+L<https://member.developer.intuit.com/qbSDK-current/Common/newOSR/index.html>
+
+For instance the CustomerAdd xml starts like this:
+
+ <QBXML>
+  <QBXMLMsgsRq onError="stopOnError">
+   <CustomerAddRq>
+    <CustomerAdd> <!-- required -->
+     <Name >STRTYPE</Name> <!-- required -->
+     <IsActive >BOOLTYPE</IsActive>
+  ....
+ </QBXML>
+
+Now, none of the XML from the root to the XPath C<< QBXML/QBXMLMsgsRq/CustomerAddRq/CustomerAdd >> needs any
+binding from the hashref. If you compiled this XML and had C<< hash_depth>> set to 0, then to set the name your hashref
+would have to look like:
+
+  my %data = ( QBXML => { QXBMLMsgsRq => { CustomerAddRq => { CustomerAdd => { Name => 'Bob Jones' }}}}} ;
+
+In contrast , if you compiled this XML and had C<< hash_depth>> set to 4, then to set the name your hashref
+would only have to look like:
+
+  my %data = (  Name => 'Bob Jones' } ;
+
+=head2 prepend_lib
+
+The generated class file has a path generated from splitting the class name on double colon. In most cases, you will want to write
+the class file to a path with 'lib' prepended and so you would set this option to 'lib'
+
+=head2 extends
+
+The XML class file is a L<Moose> class and can extend any superclass. E.g., in the L<XML::Quickbooks> distribution, each
+XML class file extends C<< XML::Quickbooks >>.
+
+=head1 SEE ALSO
+
+=head2 Source code repository
+
+L<https://github.com/metaperl/xml-writer-compiler>
+
+=head2 Related modules
+
+=head3 XML::Toolkit
+
+L<XML::Toolkit>
+
+=head3 XML::Element::Tolol
+
+L<XML::Element::Tolol>
+
+=head2 Relevant links
+
+=head3 Moose, the tree structure of XML and object-oriented inheritance hiearchies
+
+L<http://perlmonks.org/index.pl?node_id=910617>
+
+=head3 Control Windows Quickbooks with Win32::OLE
+
+L<http://perlmonks.org/index.pl?node_id=909187>
+
+=head3 Generating XML with data structures and Perl classes - the XML::Element::Tolol approach
+
+L<http://perlmonks.org/index.pl?node_id=913713>
+
+
+=head1 COPYRIGHT
+
+Copyright C<< RANGE('2011-07-25', NOW()) >> Terrence Brannon.
+
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+
+This program is distributed in the hope that it will be useful, 
+but without any warranty; without even the implied warranty of merchantability or fitness for a particular purpose.
+
+=head1 AUTHOR
+
+Terrence Brannon <tbone@cpan.org>
+
+
+
