@@ -25,30 +25,30 @@ sub DIVE {
     my $ref = Dive( $root, @keys );
     my $ret;
 
-    #warn "DIVEROOT: " . Dumper($root);
-    #warn "DIVEKEYS: @keys";
+    warn "DIVEROOT: " . Dumper($root);
+    warn "DIVEKEYS: @keys";
     if ( ref $ref eq 'ARRAY' ) {
 
-        #warn 1.1;
+        warn 1.1;
         $ret = $ref;
     }
     elsif ( ref $ref eq 'HASH' ) {
 
-        #warn 1.2;
+        warn 1.2;
         $ret = '';
     }
     elsif ( not defined $ref ) {
 
-        #warn 1.3;
+        warn 1.3;
         $ret = '';
     }
     else {
 
-        #warn 1.4;
+        warn 1.4;
         $ret = $ref;
     }
 
-    #warn "DIVERET: $ret";
+    warn "DIVERET: " . Dumper($ret);
     $ret;
 
 }
@@ -68,7 +68,7 @@ sub EXTRACT {
         @ret = ( [], $scalar );
     }
 
-    #warn "EXTRACTRET: " . Dumper(\@ret);
+    warn "EXTRACTRET: " . Dumper(\@ret);
     @ret;
 
 }
