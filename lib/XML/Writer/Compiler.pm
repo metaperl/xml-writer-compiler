@@ -344,7 +344,7 @@ For instance the CustomerAdd xml starts like this:
  </QBXML>
 
 Now, none of the XML from the root to the XPath C<< QBXML/QBXMLMsgsRq/CustomerAddRq/CustomerAdd >> needs any
-binding from the hashref. If you compiled this XML and had C<< hash_depth>> set to 0, then to set the name your hashref
+binding from the hashref. If you compiled this XML and had C<< hash_depth >> set to 0, then to set the name your hashref
 would have to look like:
 
   my %data = ( QBXML => { QXBMLMsgsRq => { CustomerAddRq => { CustomerAdd => { Name => 'Bob Jones' }}}}} ;
